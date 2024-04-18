@@ -133,6 +133,42 @@ export type Permissions = "CREATE_INSTANT_INVITE"
 
 export type PermissionsBits = Record<Permissions, bigint>;
 
+type ASTNode = {
+    type: string;
+    content: string | ASTNode;
+}[];
+
+export class FormattedMessage<
+    Params extends string = string,
+    Markdown extends boolean | undefined = undefined,
+    Args = [Record<Params, any>] | (Params extends `${infer _}` ? never : [])
+> {
+    /**
+     * @throws {SyntaxError} Argument `message` must follow the proper syntax.
+     * @see {@link https://gist.github.com/ryan-0324/f8602ce80d4f71e5687adbbe44bf825d}
+     */
+    constructor(message: string, locale?: string, hasMarkdown?: Markdown);
+
+    format(...args: Args): Markdown extends true
+        ? (string | React.ReactElement)[]
+        : string;
+    astFormat(...args: Args): ASTNode;
+    plainFormat(...args: Args): string;
+    getContext<A extends Record<string, any>>(args: A): Markdown extends true
+        ? [
+            Record<Exclude<keyof A, Params>, A[keyof A]> & Record<Params & keyof A, number | A[keyof A]>,
+            keyof A extends never ? {} : Record<number, A[Params & keyof A]>
+        ]
+        : [A, {}];
+
+    message: string;
+    hasMarkdown: Markdown;
+    intlMessage: {
+        format(...args: Args): string;
+        _locale: string;
+    };
+}
+
 export interface Locale {
     name: string;
     value: string;
